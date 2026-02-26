@@ -112,3 +112,4 @@ xlabel('log(Vibration)');
 ylabel('log(Degradation Rate)');
 title('DHDE Power Law Validation');
 grid on;
+
