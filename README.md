@@ -1,144 +1,193 @@
-# Adaptive Degradation Modelling
+# Bearing Degradation and Failure Prediction Model
 
 ## Overview
 
-This repository documents the progressive development of an adaptive statistical framework for modelling and detecting degradation in rolling element bearings using the NASA IMS dataset.
+This project develops a vibration-based prognostics framework for detecting degradation and predicting failure in rolling element bearings using the NASA IMS bearing dataset.
 
-The project evolved through multiple modelling paradigms:
+The goal is to transform raw vibration measurements into actionable reliability insights by identifying degradation regimes and estimating the Remaining Useful Life (RUL) of the system.
 
-1. Deterministic degradation modelling (DHDE)
-2. Adaptive local exponential growth modelling
-3. Statistical instability detection (in progress)
-
-Rather than presenting a single final model, this repository captures the research trajectory — including structural validation, model limitations, and refinement.
+The model combines signal processing, degradation modelling, and statistical change detection to build a complete predictive maintenance pipeline.
 
 ---
 
-## Research Motivation
+# Project Objectives
 
-Traditional vibration-based prognostics often rely on:
-
-- RMS thresholding
-- Global curve fitting
-- Deterministic degradation laws
-
-However, bearing degradation typically exhibits:
-
-- Long stationary phases
-- Rapid late-stage acceleration
-- Non-global model consistency
-
-This project investigates whether degradation should be modelled as:
-
-- A deterministic health-state process (Phase 1)
-- A locally exponential acceleration process (Phase 2)
-- A statistically detectable instability transition (Phase 3)
-
----
-
-# Phase 1 — Deterministic DHDE Model
-
-### Assumption
-Degradation follows a power-law dynamic:
-
-dH/dt = -α V^m
-
-Where:
-- H(t) is normalized health
-- V(t) is RMS vibration
-- α, m are model parameters
-
-### Method
-- Health-state transformation
-- Log–log regression for parameter estimation
-- Structural validation using R²
-
-### Findings
-- Low structural R² on IMS data
-- Global power-law assumption not strongly supported
-- Early RUL prediction unstable
-
-This phase established modelling limitations.
-
----
-
-# Phase 2 — Adaptive Exponential Growth Model
-
-### Assumption
-Late-stage degradation follows local exponential growth:
-
-V(t) = A exp(λ t)
-
-### Method
-- Log-linear sliding window regression
-- Adaptive estimation of growth rate λ(t)
-- Short-horizon analytical failure projection
-
-### Key Insight
-Degradation is better represented as a *locally exponential acceleration process*, rather than a globally deterministic law.
-
-Short-horizon predictions converge near failure.
-
----
-
-# Phase 3 — Statistical Instability Detection (In Progress)
-
-Instead of predicting failure time directly, we investigate:
-
-When does the system transition from stationary stochastic behaviour to structured exponential growth?
-
-We define:
-
-λ(t) = d/dt log V(t)
-
-Under healthy conditions:
-λ(t) ~ N(0, σ²)
-
-Under degradation:
-λ(t) ~ N(μ, σ²), μ > 0
-
-We implement sequential change detection (CUSUM) to detect statistically significant mean shifts in λ.
-
-Goal:
-Detect degradation instability earlier than RMS threshold crossing.
+* Extract a meaningful health indicator from raw vibration signals.
+* Model degradation dynamics in rotating machinery.
+* Detect statistical instability in degradation behaviour.
+* Identify degradation regimes automatically.
+* Predict failure time and estimate Remaining Useful Life (RUL).
 
 ---
 
 # Dataset
 
-NASA IMS Bearing Dataset  
-Center for Intelligent Maintenance Systems  
-University of Cincinnati
+This project uses the **NASA IMS Bearing Dataset**, which contains vibration measurements collected from a bearing test rig until failure.
+
+The dataset includes thousands of vibration signals recorded over time, allowing analysis of degradation behaviour leading up to bearing failure.
+
+Each vibration file represents accelerometer data collected from the test rig at a specific time interval.
 
 ---
 
-# Repository Structure
+# Methodology
 
-Phase1_DHDE_Model  
-Phase2_Adaptive_Exponential_Model  
-Phase3_Statistical_Instability_Detection (in development)  
+The model follows a multi-stage predictive maintenance pipeline:
+
+```
+Raw vibration signals
+↓
+Health indicator extraction (RMS)
+↓
+Log degradation modelling
+↓
+Degradation velocity estimation
+↓
+Residual dynamics analysis
+↓
+Sequential change detection (CUSUM)
+↓
+Regime identification
+↓
+Accelerated degradation modelling
+↓
+Failure prediction
+↓
+Remaining Useful Life estimation
+```
 
 ---
 
-# Current Status
+# Phase 1: Deterministic Degradation Modelling
 
-- Phase 1 complete
-- Phase 2 complete
-- Phase 3 under development
+The vibration signals are transformed into a degradation indicator using Root Mean Square (RMS) vibration energy.
 
-Future work includes:
+The RMS signal captures the increasing vibration energy associated with bearing damage.
 
-- False-alarm control analysis
-- Multi-bearing validation
-- Detection lead-time benchmarking
-- Confidence interval estimation
+Key concept:
+
+RMS measures vibration energy and acts as a proxy for damage accumulation in rotating machinery.
 
 ---
 
-# Research Direction
+# Phase 2: Adaptive Exponential Degradation Modelling
 
-This work is evolving toward a statistically rigorous early-instability detection framework for rotating machinery, grounded in change-detection theory rather than threshold heuristics.
+Bearing degradation often follows exponential growth behaviour.
+To linearise this behaviour, the degradation signal is transformed using a logarithmic model:
+
+g(t) = log(D(t))
+
+This allows the degradation dynamics to be analysed using velocity-based modelling.
+
+The degradation velocity is estimated as the difference between successive log degradation states.
 
 ---
 
-Author: Benjamin Unah  
+# Phase 3: Statistical Instability Detection (CUSUM)
+
+Sequential hypothesis testing is used to detect changes in degradation behaviour.
+
+The Cumulative Sum (CUSUM) algorithm monitors residual dynamics to detect deviations from expected degradation behaviour.
+
+CUSUM statistic:
+
+S_t = max(0, S_(t-1) + ε_t − k)
+
+When the statistic exceeds a threshold, a degradation regime transition is detected.
+
+This allows the model to identify when the system transitions from healthy behaviour to degradation.
+
+---
+
+# Phase 4: Regime-Aware Failure Prediction
+
+Once the accelerated degradation regime is identified, a quadratic degradation model is fitted to the late-stage degradation region.
+
+The model predicts the failure time by solving:
+
+g(t) = a + bt + ct²
+
+The predicted failure time is used to estimate Remaining Useful Life:
+
+RUL = predicted failure time − current time
+
+---
+
+# Results
+
+Using the NASA IMS bearing dataset:
+
+* Early degradation detection occurred at sample ~156
+* True failure occurred at sample 2156
+* Predicted failure occurred at sample ~2245
+* Prediction error ≈ 89 samples (~4%)
+
+This demonstrates that the model can detect degradation early and predict failure with reasonable accuracy.
+
+---
+
+# Key Concepts Used
+
+This project integrates principles from several fields:
+
+**Vibration Mechanics**
+
+* Bearing fault dynamics
+* Impact-induced vibration energy
+
+**Signal Processing**
+
+* RMS energy extraction
+* Log transformation
+
+**Reliability Engineering**
+
+* Degradation modelling
+* Remaining Useful Life prediction
+
+**Statistical Process Monitoring**
+
+* Sequential hypothesis testing
+* CUSUM change detection
+
+---
+
+# Tools and Technologies
+
+* MATLAB
+* Signal Processing
+* Time Series Analysis
+* Statistical Change Detection
+* Degradation Modelling
+
+---
+
+# Applications
+
+This framework is relevant to predictive maintenance in industries such as:
+
+* Oil and Gas
+* Aerospace
+* Manufacturing
+* Energy and Power Systems
+* Wind Turbines
+
+Predictive maintenance systems built on similar principles are used to monitor rotating machinery and prevent unexpected equipment failures.
+
+---
+
+# Future Improvements
+
+Potential extensions of this work include:
+
+* Testing across multiple bearings in the dataset
+* Uncertainty-aware RUL prediction
+* Monte Carlo degradation modelling
+* Multi-sensor fusion
+* Real-time online prediction
+
+---
+
+# Author
+Benjamin Unah
+
